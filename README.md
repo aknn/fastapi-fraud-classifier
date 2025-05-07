@@ -108,6 +108,16 @@ aml-ml-fastapi/
 └── requirements.txt            # Python package dependencies
 ```
 
+## Data Generation
+
+Before training or feature building, generate synthetic transaction data:
+
+```bash
+python3 generate_data.py
+```
+
+Generated CSV will be at `data/raw/synthetic_transactions.csv`.
+
 ## Set up instructions
 
 This sample makes use of Dev Containers. To leverage this setup, make sure you have [Docker installed](https://www.docker.com/products/docker-desktop).
