@@ -1,3 +1,4 @@
-fastapi
-uvicorn[standard]
-pydantic
+Cython
+fastapi>=0.100.0
+uvicorn>=0.22.0
+pydantic>=2.0.0
