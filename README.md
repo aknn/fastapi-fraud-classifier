@@ -108,15 +108,15 @@ aml-ml-fastapi/
 └── requirements.txt            # Python package dependencies
 ```
 
-## Data Generation
+## Data Acquisition
 
-Before training or feature building, generate synthetic transaction data:
+Acquire the synthetic transaction dataset from Kaggle:
 
 ```bash
-python3 generate_data.py
+kaggle datasets download -d berkanoztas/synthetic-transaction-monitoring-dataset-aml -p data/raw --unzip
 ```
 
-Generated CSV will be at `data/raw/synthetic_transactions.csv`.
+Ensure the CSV file is located at `data/raw/synthetic_transactions.csv`.
 
 ## Set up instructions
 
