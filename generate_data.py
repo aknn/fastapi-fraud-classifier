@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from pathlib import Path
 
 import numpy as np
@@ -29,19 +29,38 @@ fake = Faker()
 
 
 def generate_timestamps(n: int, start: datetime, end: datetime) -> pd.DataFrame:
-    total_seconds = int((end - start).total_seconds())
-    offsets = np.random.randint(0, total_seconds, size=n)
-    dates = [start + timedelta(seconds=int(off)) for off in offsets]
+    # weighted by hour-of-day with business hours peak
+    total_days = (end.date() - start.date()).days
+    days = np.random.randint(0, total_days + 1, size=n)
+    dates = [start.date() + timedelta(days=int(d)) for d in days]
+    # business hours 8-18 have higher weight
+    hour_weights = np.array([0.02] * 24)
+    hour_weights[8:19] = 0.04
+    hour_weights /= hour_weights.sum()
+    hours = np.random.choice(np.arange(24), size=n, p=hour_weights)
+    minutes = np.random.randint(0, 60, size=n)
+    seconds = np.random.randint(0, 60, size=n)
+    datetimes = [datetime.combine(d, time(h, m, s))
+                 for d, h, m, s in zip(dates, hours, minutes, seconds)]
     return pd.DataFrame({
-        "DateTime": dates,
-        "Date": [dt.date().isoformat() for dt in dates],
-        "Time": [dt.time().isoformat() for dt in dates],
+        "DateTime": datetimes,
+        "Date": [dt.date().isoformat() for dt in datetimes],
+        "Time": [dt.time().isoformat() for dt in datetimes],
     })
 
 
 def generate_accounts(n: int):
     senders = np.random.randint(1_000_000, 9_999_999, size=n)
     receivers = np.random.randint(1_000_000, 9_999_999, size=n)
+    # network hubs: a small set of accounts with higher connectivity
+    hub_count = max(1, n // 2000)
+    hub_senders = np.random.choice(senders, size=hub_count, replace=False)
+    hub_receivers = np.random.choice(receivers, size=hub_count, replace=False)
+    hub_mask = np.random.rand(n) < 0.1
+    senders = np.where(hub_mask, np.random.choice(
+        hub_senders, size=n), senders)
+    receivers = np.where(hub_mask, np.random.choice(
+        hub_receivers, size=n), receivers)
     return senders, receivers
 
 
@@ -73,6 +92,10 @@ def build_dataframe(n: int) -> pd.DataFrame:
     payment_types = ["SWIFT", "WIRE", "ACH", "SEPA", "RTGS"]
 
     logger.info("Sampling categorical fields...")
+    # realistic merchant categories
+    merchants = ["retail", "electronics", "legal services",
+                 "shell corporation", "pharma", "luxury goods", "crypto exchange"]
+    merchant_category = sample_categories(n, merchants)
     return pd.DataFrame({
         "Date": ts["Date"],
         "Time": ts["Time"],
@@ -91,6 +114,7 @@ def build_dataframe(n: int) -> pd.DataFrame:
                 n, ["structuring", "smurfing", "layering", "shell"]),
             "none"
         ),
+        "Merchant_category": merchant_category,
     })
 
 # -----------------------------------------------------------------------------
